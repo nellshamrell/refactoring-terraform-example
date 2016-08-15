@@ -22,6 +22,7 @@ resource "aws_security_group_rule" "allow-ssh" {
     security_group_id = "${aws_security_group.supermarket-cluster-sg.id}"
 }
 
+/*
 resource "aws_security_group_rule" "allow-443" {
     type = "ingress"
     from_port = 0
@@ -30,6 +31,7 @@ resource "aws_security_group_rule" "allow-443" {
     cidr_blocks = ["0.0.0.0/0"]
     security_group_id = "${aws_security_group.supermarket-cluster-sg.id}"
 }
+*/
 
 
 resource "aws_security_group_rule" "allow_all_egress" {
