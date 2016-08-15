@@ -4,50 +4,14 @@ provider "aws" {
   region = "${var.region}"
 }
 
-# Create security group for servers in this cluster
-
-resource "aws_security_group" "allow-ssh" {
-  name = "nell-allow-ssh"
-  tags {
-    Name = "Allow All SSH"
-  }
+module "security-group" {
+  source = "./modules/aws_security_groups"
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+  region = "${var.region}"
 }
 
-resource "aws_security_group_rule" "allow-ssh" {
-    type = "ingress"
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.allow-ssh.id}"
-}
-
-resource "aws_security_group" "allow-443" {
-  name = "nell-allow-443"
-  tags {
-    Name = "Allow connections over 443"
-  }
-}
-
-resource "aws_security_group_rule" "allow-443" {
-    type = "ingress"
-    from_port = 443
-    to_port = 443
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.allow-443.id}"
-}
-
-
-resource "aws_security_group_rule" "allow_all_egress" {
-    type = "egress"
-    from_port = 0
-    to_port = 65535
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    security_group_id = "${aws_security_group.allow-ssh.id}"
-}
-
+/*
 # This will create the users and organization
 resource "template_file" "chef_bootstrap" {
   template = "${file("chef_bootstrap.tpl")}"
@@ -61,6 +25,7 @@ resource "template_file" "chef_bootstrap" {
     chef-server-org-full-name = "${var.chef-server-org-full-name}"
   }
 }
+*/
 
 # Setup chef-server
 resource "aws_instance" "chef_server" {
@@ -70,8 +35,9 @@ resource "aws_instance" "chef_server" {
   tags {
     Name = "test-chef-server"
   }
-  security_groups = ["${aws_security_group.allow-ssh.name}", "${aws_security_group.allow-443.name}"]
+  security_groups = ["${module.security-group.security-group-name}"]
 
+/*
   # Uploads all cookbooks needed to install Chef server
   provisioner "file" {
     source = "cookbooks"
@@ -111,8 +77,10 @@ resource "aws_instance" "chef_server" {
   provisioner "local-exec" {
     command = "scp -oStrictHostKeyChecking=no -i ${var.private_ssh_key_path} ubuntu@${self.public_ip}:${var.chef-server-user}.pem .chef/${var.chef-server-user}.pem"
   }
+*/
 }
 
+/*
 # Template to render knife.rb
 resource "template_file" "knife_rb" {
   template = "${file("knife_rb.tpl")}"
@@ -134,19 +102,21 @@ resource "template_file" "knife_rb" {
     command = "knife cookbook upload --all --cookbook-path cookbooks"
   }
 }
+*/
 
 # Sets up VM for Supermarket
 resource "aws_instance" "supermarket_server" {
-  depends_on = ["aws_instance.chef_server"]
+#  depends_on = ["aws_instance.chef_server"]
   ami = "${var.ami}"
   instance_type = "${var.instance_type}"
   key_name = "${var.key_name}"
   tags {
     Name = "test-supermarket"
   }
-  security_groups = ["${aws_security_group.allow-ssh.name}", "${aws_security_group.allow-443.name}"]
+  security_groups = ["${module.security-group.security-group-name}"]
 }
 
+/*
 # Template for the Supermarket Databag
 resource "template_file" "supermarket_databag" {
   depends_on = ["aws_instance.supermarket_server"]
@@ -281,3 +251,4 @@ resource "null_resource" "supermarket-node-client" {
     command = "ssh -i ${var.private_ssh_key_path} ubuntu@${aws_instance.supermarket_server.public_ip} 'sudo chef-client'"
   }
 }
+*/
